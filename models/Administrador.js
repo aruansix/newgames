@@ -1,17 +1,15 @@
 const Usuario = require("./Usuario");
 
 class Administrador extends Usuario {
+    #nivel;
+
     constructor(nome, email, telefone, nivel) {
-        super(nome, email, telefone);
-        this.nivelAcesso = nivel;
+        super(nome, email, telefone, "admin");
+        this.#nivel = nivel;
     }
 
-    revisar(jogo) {
-        return `Jogo revisado: ${jogo.titulo}`;
-    }
-
-    removerAnuncio(vendedor, index) {
-        return vendedor.anuncios.splice(index, 1);
+    getNivel() {
+        return this.#nivel;
     }
 }
 

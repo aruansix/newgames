@@ -1,14 +1,16 @@
-module.exports = {
-    anunciarJogo(vendedor, jogo) {
-        vendedor.anunciar(jogo);
+const jogos = require("./JogoController").jogos; 
 
-        return {
-            mensagem: "Jogo anunciado com sucesso!",
-            jogo: jogo.titulo
-        };
-    },
-
-    listarAnuncios(vendedor) {
-        return vendedor.getAnuncios();
+class VendedorController {
+    static anunciar(vendedor, jogo) {
+        jogo.aprovado = false;
+        jogos.push(jogo);
+        vendedor.anunciar(jogo); 
+        return { mensagem: "Jogo anunciado com sucesso", jogo };
     }
-};
+
+    static listarAnuncios(vendedor) {
+        return jogos.filter(j => j.getEmailVendedor() === vendedor.getEmail());
+    }
+}
+
+module.exports = VendedorController;

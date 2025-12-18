@@ -1,15 +1,18 @@
-module.exports = {
-    comprarJogo(comprador, jogo) {
-        comprador.comprar(jogo);
+const jogos = require("./JogoController").jogos;
 
-        return {
-            mensagem: "Compra realizada com sucesso!",
-            jogoComprado: jogo.titulo,
-            totalPedidos: comprador.getPedidos().length
-        };
-    },
+class CompradorController {
+    static comprar(comprador, tituloJogo) {
+    const jogo = jogos.find(j => j.getDados().titulo === tituloJogo && j.getDados().aprovado);
+    if (!jogo) {
+        return { erro: "Jogo não encontrado ou não aprovado" };
+    }
+    comprador.comprar(jogo);
+    return { mensagem: `Jogo ${tituloJogo} comprado com sucesso` };
+    }
 
-    listarPedidos(comprador) {
+    static listarPedidos(comprador) {
         return comprador.getPedidos();
     }
-};
+}
+
+module.exports = CompradorController;

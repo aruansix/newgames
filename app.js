@@ -1,64 +1,97 @@
-document.addEventListener("DOMContentLoaded", () => {
+const express = require("express");
+const path = require("path");
 
-    const listaJogos = document.getElementById("listaJogos");
-    const resultado = document.getElementById("resultado");
-    const btnComprar = document.getElementById("btnComprar");
-    const btnPedidos = document.getElementById("btnPedidos");
+const { JogoController, jogos } = require("./controllers/JogoController");
+const { LoginController, usuarios } = require("./controllers/LoginController");
+const VendedorController = require("./controllers/VendedorController");
+const CompradorController = require("./controllers/CompradorController");
+const AdminController = require("./controllers/AdminController");
 
-    if (!listaJogos) {
-        console.error("Elemento #listaJogos não encontrado");
-        return;
-    }
+const app = express();
 
-   
-    const jogos = [
-        {
-            titulo: "God of War Ragnarok",
-            preco: 180,
-            plataforma: "PS5",
-            estado: "Usado"
-        },
-        {
-            titulo: "The Last of Us Part II",
-            preco: 120,
-            plataforma: "PS4",
-            estado: "Usado"
-        }
-    ];
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-    const pedidos = [];
 
-    function renderizarJogos() {
-        listaJogos.innerHTML = "";
+app.use("/views", express.static(path.join(__dirname, "views")));
 
-        jogos.forEach((jogo, index) => {
-            const card = document.createElement("div");
-            card.className = "jogo";
 
-            card.innerHTML = `
-                <h3>${jogo.titulo}</h3>
-                <span>Plataforma: ${jogo.plataforma}</span>
-                <span>Estado: ${jogo.estado}</span>
-                <span><strong>R$ ${jogo.preco}</strong></span>
-            `;
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "views", "index.html")));
+app.get("/login", (req, res) => res.sendFile(path.join(__dirname, "views", "login.html")));
 
-            listaJogos.appendChild(card);
-        });
-    }
+app.get("/jogos", JogoController.listarJogos);
 
-    btnComprar.onclick = () => {
-        pedidos.push(jogos[0]);
-        resultado.style.display = "block";
-        resultado.innerText = "Compra realizada com sucesso!";
-    };
+app.post("/login", LoginController.login);
 
-    btnPedidos.onclick = () => {
-        resultado.style.display = "block";
-        resultado.innerText =
-            pedidos.length === 0
-                ? "Nenhum pedido realizado."
-                : pedidos.map(p => p.titulo).join(", ");
-    };
+app.post("/anunciar", (req, res) => {
+    const { emailVendedor, titulo, preco, plataforma, estado } = req.body;
+    const vendedor = usuarios.find(u => u.getEmail() === emailVendedor && u.getTipo() === "vendedor");
+    if (!vendedor) return res.status(401).json({ erro: "Vendedor não encontrado" });
 
-    renderizarJogos();
+    const Jogo = require("./models/Jogo");
+    const novoJogo = new Jogo(titulo, parseFloat(preco), plataforma, estado);
+    novoJogo.setEmailVendedor(emailVendedor);
+    const resultado = VendedorController.anunciar(vendedor, novoJogo);
+    res.json(resultado);
 });
+
+app.get("/vendedor/anuncios/:email", (req, res) => {
+    const email = req.params.email;
+    const vendedor = usuarios.find(u => u.getEmail() === email && u.getTipo() === "vendedor");
+    if (!vendedor) return res.status(404).json({ erro: "Vendedor não encontrado" });
+    const meusAnuncios = jogos.filter(j => j.getEmailVendedor() === email);
+    res.json(meusAnuncios.map(j => j.getDados()));
+});
+
+app.post("/aprovar", (req, res) => {
+    const { emailAdmin, titulo } = req.body;
+
+    const admin = usuarios.find(u => u.getEmail() === emailAdmin && u.getTipo() === "admin");
+    if (!admin) return res.status(401).json({ erro: "Administrador não encontrado" });
+
+    const jogo = jogos.find(j => j.getDados().titulo === titulo);
+    if (!jogo) return res.status(404).json({ erro: "Jogo não encontrado" });
+
+    const resultado = AdminController.aprovarJogo(admin, jogo);
+    res.json({ mensagem: resultado });
+});
+
+
+app.post("/comprar", (req, res) => {
+    const { emailComprador, titulo } = req.body;
+
+    const comprador = usuarios.find(u => u.getEmail() === emailComprador && u.getTipo() === "comprador");
+    if (!comprador) return res.status(401).json({ erro: "Comprador não encontrado" });
+
+    const resultado = CompradorController.comprar(comprador, titulo);
+
+    if (resultado.erro) return res.status(400).json({ erro: resultado.erro });
+
+    res.json({ mensagem: resultado.mensagem });
+});
+
+app.get("/comprador/pedidos/:email", (req, res) => {
+    const emailComprador = req.params.email;
+    const comprador = usuarios.find(u => u.getEmail() === emailComprador && u.getTipo() === "comprador");
+    if (!comprador) return res.status(401).json({ erro: "Comprador não encontrado" });
+
+    const pedidos = CompradorController.listarPedidos(comprador).map(j => j.getDados());
+    res.json(pedidos);
+});
+
+app.get("/admin/jogos", (req, res) => {
+    res.json(AdminController.listarJogosParaAprovacao());
+});
+
+
+app.post("/admin/jogo", (req, res) => {
+    const { emailAdmin, titulo, aprovado } = req.body;
+    const admin = usuarios.find(u => u.getEmail() === emailAdmin && u.getTipo() === "admin");
+    if (!admin) return res.status(401).json({ erro: "Administrador não encontrado" });
+
+    const resultado = AdminController.alterarAprovacao(admin, titulo, aprovado);
+    if (resultado.erro) return res.status(400).json(resultado);
+    res.json(resultado);
+});
+
+module.exports = app;

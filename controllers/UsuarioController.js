@@ -1,8 +1,13 @@
-module.exports = {
-    exibirPerfil(usuario) {
+class UsuarioController {
+    static perfil(usuario) {
         return {
-            tipo: usuario.constructor.name,
-            dados: usuario.getInfo()
+            nome: usuario.getNome(),
+            email: usuario.getEmail(),
+            telefone: usuario.getTelefone(),
+            tipo: usuario.getTipo(),
+            dataCadastro: usuario.getDataCadastro()
         };
     }
-};
+}
+
+module.exports = UsuarioController;

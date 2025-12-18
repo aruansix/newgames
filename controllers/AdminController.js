@@ -1,17 +1,15 @@
-module.exports = {
-    revisarJogo(admin, jogo) {
-        return {
-            admin: admin.nome,
-            mensagem: admin.revisar(jogo)
-        };
-    },
-
-    removerAnuncio(admin, vendedor, index) {
-        const removido = admin.removerAnuncio(vendedor, index);
-
-        return {
-            mensagem: "Anúncio removido pelo administrador",
-            jogoRemovido: removido[0]?.titulo || "Nenhum"
-        };
+class AdminController {
+    static listarJogosParaAprovacao() {
+        return require("./JogoController").jogos.map(j => j.getDados());
     }
-};
+
+    static alterarAprovacao(admin, titulo, aprovado) {
+        if (admin.getNivel() !== "Master") {
+            return { erro: "Sem permissão" };
+        }
+        const { JogoController } = require("./JogoController");
+        return JogoController.alterarAprovacao(titulo, aprovado);
+    }
+}
+
+module.exports = AdminController;

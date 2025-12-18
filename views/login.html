@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - NewGames</title>
+    <link rel="stylesheet" href="/views/style.css">
+</head>
+<body>
+
+<header>
+    <h1>NewGames</h1>
+</header>
+
+<main class="container">
+
+    <section class="card">
+        <h2>Login</h2>
+        <form method="POST">
+            <p>
+                <label>Email</label><br>
+                <input type="email" name="email" required>
+            </p>
+
+            <button type="submit">Entrar</button>
+        </form>
+    </section>
+
+</main>
+
+<footer>
+    <p>NewGames © 2025</p>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector("form");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = form.email.value;
+
+        try {
+            const res = await fetch("/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                sessionStorage.setItem("usuario", JSON.stringify(data.usuario));
+
+                window.location.href = "/";
+            } else {
+                alert(data.erro);
+            }
+
+        } catch (err) {
+            console.error(err);
+        }
+    });
+});
+</script>
+
+</body>
+</html>
